@@ -347,7 +347,7 @@ def get_optimal_locations(lat, lng):
 
 @app.route('/nearby-stations')
 def nearby_stations():
-    return render_template('index.html')  # Your existing station search page
+    return render_template('index.html')
 
 @app.route('/route-planner')
 def route_planner():
