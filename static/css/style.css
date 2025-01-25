@@ -139,6 +139,7 @@ button i {
 
 .app-container {
     display: flex;
+    flex-direction: row-reverse;
     height: 100vh;
     padding-top: 60px;
 }
@@ -146,7 +147,7 @@ button i {
 .sidebar {
     width: 350px;
     background: #f8f9fa;
-    border-right: 1px solid #dee2e6;
+    border-left: 1px solid #dee2e6;
     display: flex;
     flex-direction: column;
     height: 100%;
