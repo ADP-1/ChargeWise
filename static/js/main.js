@@ -2,17 +2,28 @@ let map;
 let userMarker = null;
 let stationMarkers = [];
 let routingControl = null;
+let accuracyCircle = null;
+let isMapInitialized = false;
+
+// Replace with your Google Maps API key
+const GOOGLE_MAPS_API_KEY = 'YOUR_API_KEY';
 
 // Initialize map when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    initMap();
-    
-    // Add click event listener to the location button
-    document.getElementById('location-button').addEventListener('click', getCurrentLocation);
+document.addEventListener('DOMContentLoaded', function() {
+    // Only initialize if the map container exists
+    const mapContainer = document.getElementById('map');
+    if (mapContainer && !isMapInitialized) {
+        initMap();
+    }
 });
 
 function initMap() {
-    // Initialize map centered on Delhi
+    // Check if map is already initialized
+    if (isMapInitialized) {
+        return;
+    }
+
+    // Initialize map
     map = L.map('map').setView([28.6139, 77.2090], 11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -20,125 +31,103 @@ function initMap() {
 
     // Add click handler to map
     map.on('click', function(e) {
-        const position = {
-            lat: e.latlng.lat,
-            lng: e.latlng.lng
-        };
-        
-        // Update user marker
-        if (userMarker) {
-            map.removeLayer(userMarker);
-        }
-        userMarker = L.marker([position.lat, position.lng], {
-            icon: L.icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34]
-            })
-        }).addTo(map);
-        userMarker.bindPopup("Your Selected Location").openPopup();
-
-        // Fetch stations for clicked location
-        fetchNearbyStations(position);
+        handleLocationSelect(e.latlng.lat, e.latlng.lng);
     });
 
-    // Get user's current location
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            position => {
-                const userLocation = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-                map.setView([userLocation.lat, userLocation.lng], 13);
-                fetchNearbyStations(userLocation);
-            },
-            error => {
-                console.error('Error getting location:', error);
-                // Default to Delhi if location access denied
-                fetchNearbyStations({ lat: 28.6139, lng: 77.2090 });
-            }
-        );
+    // Add event listener to location button
+    const locationButton = document.getElementById('location-button');
+    if (locationButton) {
+        locationButton.addEventListener('click', getCurrentLocation);
     }
+
+    isMapInitialized = true;
 }
 
 function getCurrentLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const pos = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                };
+    const button = document.getElementById('location-button');
+    button.textContent = 'Getting location...';
+    button.disabled = true;
 
-                map.setView([pos.lat, pos.lng], 13);
-                
-                // Update user marker
-                if (userMarker) map.removeLayer(userMarker);
-                userMarker = L.marker([pos.lat, pos.lng], {
-                    icon: L.icon({
-                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-                        iconSize: [25, 41],
-                        iconAnchor: [12, 41],
-                        popupAnchor: [1, -34]
-                    })
-                }).addTo(map);
-                userMarker.bindPopup("Your Location").openPopup();
-
-                // Fetch nearby stations
-                fetchNearbyStations(pos);
-            },
-            () => {
-                handleLocationError(true);
-            }
-        );
-    } else {
-        handleLocationError(false);
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser");
+        button.textContent = 'Use My Location';
+        button.disabled = false;
+        return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+        // Success callback
+        function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // Update map and marker
+            handleLocationSelect(lat, lng);
+            map.setView([lat, lng], 14);
+            
+            button.textContent = 'Use My Location';
+            button.disabled = false;
+        },
+        // Error callback
+        function(error) {
+            let errorMessage = "Error getting your location. ";
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage += "Please enable location services.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage += "Location unavailable.";
+                    break;
+                case error.TIMEOUT:
+                    errorMessage += "Request timed out.";
+                    break;
+                default:
+                    errorMessage += "An unknown error occurred.";
+            }
+            alert(errorMessage);
+            button.textContent = 'Use My Location';
+            button.disabled = false;
+        },
+        // Options
+        {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+        }
+    );
 }
 
-function fetchNearbyStations(position) {
-    // Make actual API call to our backend
-    fetch(`/api/stations/${position.lat}/${position.lng}`)
+function handleLocationSelect(lat, lng) {
+    if (userMarker) {
+        map.removeLayer(userMarker);
+    }
+    
+    userMarker = L.marker([lat, lng], {
+        icon: L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34]
+        })
+    }).addTo(map);
+    userMarker.bindPopup("Your Location").openPopup();
+
+    fetchNearbyStations(lat, lng);
+}
+
+function fetchNearbyStations(lat, lng) {
+    fetch(`/api/stations/${lat}/${lng}`)
         .then(response => response.json())
         .then(data => {
-            const stations = data.stations.map(station => ({
-                position: { lat: station.position.lat, lng: station.position.lng },
-                title: `Station ${station.id}`,
-                waitTime: `${Math.round(station.wait_time)} mins`,
-                connectors: station.connectors || ["Type 2", "CCS"],
-                power: station.power || "50kW",
-                confidence: station.confidence,
-                activeChargers: station.active_chargers,
-                totalChargers: station.total_chargers,
-                type: station.type,
-                name: station.name
-            }));
-            displayStations(stations);
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            displayStations(data.stations);
         })
         .catch(error => {
             console.error('Error fetching stations:', error);
-            // Fallback to dummy data if API fails
-            const dummyStations = [
-                {
-                    position: { lat: position.lat + 0.01, lng: position.lng + 0.01 },
-                    title: "Station 1",
-                    waitTime: "5 mins",
-                    connectors: ["Type 2", "CCS"],
-                    power: "50kW",
-                    type: "Market"
-                },
-                {
-                    position: { lat: position.lat - 0.01, lng: position.lng - 0.01 },
-                    title: "Station 2",
-                    waitTime: "10 mins",
-                    connectors: ["CHAdeMO", "Type 2"],
-                    power: "150kW",
-                    type: "Office"
-                }
-            ];
-            displayStations(dummyStations);
+            alert('Error fetching nearby stations. Please try again.');
         });
 }
 
@@ -148,12 +137,9 @@ function displayStations(stations) {
     stationMarkers = [];
 
     stations.forEach(station => {
-        // Choose marker color based on station type
-        const markerColor = getMarkerColor(station.type);
-        
         const marker = L.marker([station.position.lat, station.position.lng], {
             icon: L.icon({
-                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${markerColor}.png`,
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${getMarkerColor(station.type)}.png`,
                 iconSize: [25, 41],
                 iconAnchor: [12, 41],
                 popupAnchor: [1, -34]
@@ -163,14 +149,12 @@ function displayStations(stations) {
         const popupContent = `
             <div class="station-popup">
                 <h3>${station.name}</h3>
-                <p class="station-type">${station.type} Area</p>
-                <p>Location: ${station.position.lat.toFixed(4)}, ${station.position.lng.toFixed(4)}</p>
-                <p>Wait Time: ${station.waitTime}</p>
-                <p>Confidence: ${Math.round(station.confidence * 100)}%</p>
-                <p>Available Chargers: ${station.activeChargers}/${station.totalChargers}</p>
+                <p>Type: ${station.type}</p>
+                <p>Wait Time: ${station.wait_time} minutes</p>
+                <p>Available Chargers: ${station.active_chargers}/${station.total_chargers}</p>
                 <p>Connectors: ${station.connectors.join(', ')}</p>
-                <p>Power: ${station.power}</p>
-                <button onclick="getDirections(${station.position.lat}, ${station.position.lng})">
+                <p>Power: ${station.power} kW</p>
+                <button onclick="getDirections(${station.position.lat}, ${station.position.lng})" class="direction-btn">
                     Get Directions
                 </button>
             </div>
@@ -182,50 +166,58 @@ function displayStations(stations) {
 }
 
 function getMarkerColor(stationType) {
-    const colorMap = {
-        'Market': 'red',
-        'Office': 'blue',
-        'Hospital': 'green',
-        'School': 'orange',
-        'Factory': 'violet',
-        'Residential': 'gray'
-    };
-    return colorMap[stationType] || 'green';
-}
-
-function getDirections(destLat, destLng) {
-    if (userMarker) {
-        // Remove existing route if any
-        if (routingControl) {
-            map.removeControl(routingControl);
-        }
-
-        // Add new route
-        routingControl = L.Routing.control({
-            waypoints: [
-                L.latLng(userMarker.getLatLng().lat, userMarker.getLatLng().lng),
-                L.latLng(destLat, destLng)
-            ],
-            routeWhileDragging: true,
-            showAlternatives: true,
-            altLineOptions: {
-                styles: [
-                    {color: 'black', opacity: 0.15, weight: 9},
-                    {color: 'white', opacity: 0.8, weight: 6},
-                    {color: 'blue', opacity: 0.5, weight: 2}
-                ]
-            }
-        }).addTo(map);
+    switch(stationType.toLowerCase()) {
+        case 'market':
+            return 'green';
+        case 'office':
+            return 'blue';
+        case 'hospital':
+            return 'red';
+        case 'school':
+            return 'orange';
+        default:
+            return 'blue';
     }
 }
 
-function handleLocationError(browserHasGeolocation) {
-    alert(
-        browserHasGeolocation
-            ? "Error: The Geolocation service failed."
-            : "Error: Your browser doesn't support geolocation."
-    );
+function getDirections(destLat, destLng) {
+    // Get user's current location or marker position
+    let startLat, startLng;
+    
+    if (userMarker) {
+        const userPos = userMarker.getLatLng();
+        startLat = userPos.lat;
+        startLng = userPos.lng;
+    } else {
+        alert("Please set your location first!");
+        return;
+    }
+
+    // Open Google Maps in a new tab with directions
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${startLat},${startLng}&destination=${destLat},${destLng}&travelmode=driving`;
+    window.open(url, '_blank');
 }
 
-// Initialize map when the page loads
-window.onload = initMap;
+// Add some CSS for the location button
+const style = document.createElement('style');
+style.textContent = `
+    .custom-map-control {
+        margin: 10px;
+    }
+    .location-button {
+        padding: 8px 12px;
+        background: white;
+        border: 2px solid rgba(0,0,0,0.2);
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    .location-button:hover {
+        background: #f4f4f4;
+    }
+    .location-button:disabled {
+        background: #cccccc;
+        cursor: wait;
+    }
+`;
+document.head.appendChild(style);
