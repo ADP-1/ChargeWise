@@ -2,6 +2,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: Roboto, sans-serif;
 }
 
 body, html {
@@ -181,11 +182,25 @@ button i {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     padding: 15px;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
 }
 
 .station-card:hover {
-    transform: translateY(-2px);
+    transform: scale(1.03);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    z-index: 2;
+}
+
+/* Add a smooth transition for child elements */
+.station-card * {
+    transition: all 0.3s ease;
+}
+
+/* Optional: Add subtle background color change on hover */
+.station-card:hover {
+    background-color: #fafafa;
 }
 
 .station-card-header {
@@ -400,3 +415,4 @@ button i {
     color: #666;
     font-size: 18px;
 }
+
