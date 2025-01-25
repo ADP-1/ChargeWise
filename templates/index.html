@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChargeWise - EV Station Locator</title>
+    <!-- Remove Flask template syntax and use direct path -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ChargeWise</h1>
+            <p>Find EV Charging Stations Near You</p>
+        </header>
+        
+        <div class="search-container">
+            <input type="text" id="location-search" placeholder="Enter location or use current location">
+            <button id="location-button">Use My Location</button>
+        </div>
+
+        <div id="map"></div>
+
+        <div class="station-info" id="station-info">
+            <h2>Station Details</h2>
+            <div id="station-details"></div>
+        </div>
+    </div>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine JS -->
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
