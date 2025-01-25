@@ -136,9 +136,15 @@ function displayStations(stations) {
     const stationList = document.getElementById('station-list');
     stationList.innerHTML = '';
 
+    // Create bounds to fit all markers
+    const bounds = L.latLngBounds();
+
     stations.forEach(station => {
+        // Get station position
+        const position = station.position || { lat: station.lat, lng: station.lng };
+        
         // Add marker to map
-        const marker = L.marker([station.position.lat, station.position.lng], {
+        const marker = L.marker([position.lat, position.lng], {
             icon: L.icon({
                 iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${getMarkerColor(station.type)}.png`,
                 iconSize: [25, 41],
@@ -148,47 +154,64 @@ function displayStations(stations) {
         }).addTo(map);
 
         // Create popup content
-        const popupContent = createStationPopup(station);
+        const popupContent = `
+            <div class="station-popup">
+                <h3>${station.name}</h3>
+                <div class="station-details">
+                    <p><i class="fas fa-charging-station"></i> ${station.active_chargers}/${station.total_chargers} Chargers Available</p>
+                    <p><i class="fas fa-clock"></i> ${station.wait_time || station.historical_avg_wait_time} mins wait time</p>
+                    <p><i class="fas fa-bolt"></i> ${station.power || '50'} kW</p>
+                    <p><i class="fas fa-car"></i> Queue: ${station.current_queue_length || '0'} vehicles</p>
+                </div>
+                <button onclick="getDirections(${position.lat}, ${position.lng})" class="direction-btn">
+                    <i class="fas fa-directions"></i> Get Directions
+                </button>
+            </div>
+        `;
+        
         marker.bindPopup(popupContent);
         stationMarkers.push(marker);
 
-        // Add to station list
-        const stationCard = createStationCard(station);
-        stationList.appendChild(stationCard);
-    });
-}
+        // Add station location to bounds
+        bounds.extend([position.lat, position.lng]);
 
-function createStationPopup(station) {
-    return `
-        <div class="station-popup">
+        // Create station card in list
+        const stationCard = document.createElement('div');
+        stationCard.className = 'station-card';
+        stationCard.innerHTML = `
             <h3>${station.name}</h3>
             <div class="station-details">
-                <p><i class="fas fa-charging-station"></i> ${station.active_chargers}/${station.total_chargers} Chargers Available</p>
-                <p><i class="fas fa-clock"></i> ${station.wait_time} mins wait time</p>
-                <p><i class="fas fa-bolt"></i> ${station.power} kW</p>
+                <p><i class="fas fa-charging-station"></i> ${station.active_chargers}/${station.total_chargers} Chargers</p>
+                <p><i class="fas fa-clock"></i> ${station.wait_time || station.historical_avg_wait_time} mins wait</p>
+                <p><i class="fas fa-bolt"></i> ${station.power || '50'} kW</p>
+                <p><i class="fas fa-car"></i> Queue: ${station.current_queue_length || '0'} vehicles</p>
             </div>
-            <button onclick="getDirections(${station.position.lat}, ${station.position.lng})" class="direction-btn">
+            <button onclick="getDirections(${position.lat}, ${position.lng})" class="direction-btn">
                 <i class="fas fa-directions"></i> Get Directions
             </button>
-        </div>
-    `;
-}
+        `;
 
-function createStationCard(station) {
-    const div = document.createElement('div');
-    div.className = 'station-card';
-    div.innerHTML = `
-        <h3>${station.name}</h3>
-        <div class="station-details">
-            <p><i class="fas fa-charging-station"></i> ${station.active_chargers}/${station.total_chargers} Chargers</p>
-            <p><i class="fas fa-clock"></i> ${station.wait_time} mins wait</p>
-            <p><i class="fas fa-bolt"></i> ${station.power} kW</p>
-        </div>
-        <button onclick="getDirections(${station.position.lat}, ${station.position.lng})" class="direction-btn">
-            <i class="fas fa-directions"></i> Get Directions
-        </button>
-    `;
-    return div;
+        // Add click handler to center map on station
+        stationCard.addEventListener('click', () => {
+            map.setView([position.lat, position.lng], 15);
+            marker.openPopup();
+        });
+
+        stationList.appendChild(stationCard);
+    });
+
+    // If we have stations, fit the map to show all of them
+    if (stationMarkers.length > 0) {
+        // Add user location to bounds if it exists
+        if (userMarker) {
+            bounds.extend(userMarker.getLatLng());
+        }
+        // Fit the map to show all markers with some padding
+        map.fitBounds(bounds, {
+            padding: [50, 50],
+            maxZoom: 15
+        });
+    }
 }
 
 function getMarkerColor(stationType) {
@@ -197,6 +220,8 @@ function getMarkerColor(stationType) {
         case 'office': return 'blue';
         case 'hospital': return 'red';
         case 'school': return 'orange';
+        case 'mall': return 'violet';
+        case 'parking': return 'yellow';
         default: return 'blue';
     }
 }
