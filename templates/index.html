@@ -13,13 +13,13 @@
     <div class="app-container">
         <div class="sidebar">
             <div class="sidebar-header">
-                <h1>ChargeWise</h1>
-                <p>Find EV Charging Stations Near You</p>
+                <div class="logo-container">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChargeWise Logo" class="logo" style="width: 80% ; height: 80%;">
+                </div>
                 <div class="search-container">
-                    <input type="text" id="location-search" placeholder="Enter location or use current location">
                     <button id="location-button">
                         <i class="fas fa-location-arrow"></i> Use My Location
-                    </button>
+                    </button>   
                 </div>
                 <div class="radius-container">
                     <label for="radius-slider">Search Radius: <span id="radius-value">5</span> km</label>

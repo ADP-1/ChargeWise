@@ -25,7 +25,7 @@ header {
 .search-container {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 #location-search {
@@ -33,6 +33,11 @@ header {
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
+}
+
+#location-button {
+    width: 100%;
+    justify-content: center;
 }
 
 button {
@@ -147,7 +152,7 @@ button i {
 }
 
 .sidebar-header {
-    padding: 20px;
+    padding: 15px 20px 8px 20px;
     background: #fff;
     border-bottom: 1px solid #dee2e6;
 }
@@ -254,8 +259,8 @@ button i {
 .status-bad { border-left: 4px solid #f44336; }
 
 .radius-container {
-    margin-bottom: 20px;
-    padding: 10px;
+    margin-bottom: 15px;
+    padding: 8px;
     background: #f8f9fa;
     border-radius: 4px;
 }
@@ -335,4 +340,14 @@ button i {
     transform: rotate(45deg);
     color: white;
     font-size: 14px;
+}
+
+.logo-container {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.logo {
+    width: 50%;
+    height: 50%;
 }
