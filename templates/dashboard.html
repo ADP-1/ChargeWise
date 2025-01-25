@@ -15,7 +15,7 @@
         </div>
         <div class="profile-section">
             <button class="about-btn">
-                <i class="fas fa-info-circle"></i>
+                About us
             </button>
             <div class="profile-icon">
                 <i class="fas fa-user"></i>
@@ -24,42 +24,89 @@
     </div>
 
     <div class="dashboard-container">
-        <h1>Welcome to ChargeWise</h1>
-        <p class="subtitle">Choose a feature to get started</p>
+        <div class="dashboard-content">
+            <h1>Welcome to ChargeWise</h1>
+            <p class="subtitle">Choose a feature to get started</p>
 
-        <div class="feature-cards">
-            <a href="/" class="feature-card">
-                <div class="card-icon">
-                    <i class="fas fa-search-location"></i>
-                </div>
-                <h2>Find Nearby Stations</h2>
-                <p>Search for charging stations around your location or a specific point</p>
-            </a>
+            <div class="feature-cards">
+                <a href="/nearby-stations" class="feature-card">
+                    <div class="card-icon">
+                        <i class="fas fa-search-location"></i>
+                    </div>
+                    <h2>Find Nearby Stations</h2>
+                    <p>Search for charging stations around your location or a specific point</p>
+                </a>
 
-            <a href="/route-planner" class="feature-card">
-                <div class="card-icon">
-                    <i class="fas fa-route"></i>
-                </div>
-                <h2>Route Planner</h2>
-                <p>Plan your journey with optimal charging stops</p>
-            </a>
+                <a href="/route-planner" class="feature-card">
+                    <div class="card-icon">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <h2>Route Planner</h2>
+                    <p>Plan your journey with optimal charging stops</p>
+                </a>
 
-            <a href="/favorites" class="feature-card">
-                <div class="card-icon">
-                    <i class="fas fa-star"></i>
-                </div>
-                <h2>Favorite Stations</h2>
-                <p>Quick access to your saved charging stations</p>
-            </a>
+                <a href="/favorites" class="feature-card">
+                    <div class="card-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h2>Favorite Stations</h2>
+                    <p>Quick access to your saved charging stations</p>
+                </a>
 
-            <a href="/statistics" class="feature-card">
-                <div class="card-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <h2>Usage Statistics</h2>
-                <p>View your charging history and patterns</p>
-            </a>
+                <a href="/statistics" class="feature-card">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h2>Usage Statistics</h2>
+                    <p>View your charging history and patterns</p>
+                </a>
+            </div>
         </div>
     </div>
+
+    <!-- About Modal -->
+    <div class="about-modal" id="aboutModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="modal-header">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChargeWise Logo" class="modal-logo" style="width: 180px; height: auto;">
+            </div>
+            <p class="project-description">
+                ChargeWise is a web application that provides users with a seamless experience for locating nearby EV charging stations. 
+                The app accesses the user's current location and fetches real-time data for finding optimal charging stations in the vicinity. 
+                Users can interact with the map to view station details and get directions to their chosen charging station.
+            </p>
+            <h3>Team Members</h3>
+            <ul class="team-list">
+                <li>Aditya Pandey</li>
+                <li>Krish Goyal</li>
+                <li>Aryan Sharma</li>
+                <li>Vishal Dubey</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Add JavaScript for modal functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const aboutBtn = document.querySelector('.about-btn');
+            const modal = document.getElementById('aboutModal');
+            const closeBtn = document.querySelector('.close-modal');
+
+            aboutBtn.addEventListener('click', () => {
+                modal.style.display = 'block';
+            });
+
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
 </body>
 </html> 
