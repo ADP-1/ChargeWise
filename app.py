@@ -8,12 +8,14 @@ from models.location_optimizer import LocationOptimizer
 from models.wait_time_predictor import WaitTimePredictor
 from dataclasses import dataclass
 from typing import Dict, Any
+from models.station_calculating_model import ChargingStationCalculator
 
 app = Flask(__name__, static_url_path='/static')
 
-# Initialize our models
+# Initialize models
+station_calculator = ChargingStationCalculator()
+wait_time_predictor = WaitTimePredictor()
 location_optimizer = LocationOptimizer()
-wait_predictor = WaitTimePredictor()
 
 # Define water bodies and restricted areas in NCR
 RESTRICTED_AREAS = [
@@ -298,7 +300,7 @@ def get_nearby_stations(lat, lng):
         station_data.append(station)
     
     # Get wait time predictions
-    predictions = wait_predictor.predict_wait_time(station_data)
+    predictions = wait_time_predictor.predict_wait_time(station_data)
     
     # Prepare response
     stations = []
@@ -345,7 +347,7 @@ def get_optimal_locations(lat, lng):
 
 @app.route('/nearby-stations')
 def nearby_stations():
-    return render_template('index.html')  # Your existing station search page
+    return render_template('index.html')
 
 @app.route('/route-planner')
 def route_planner():
@@ -364,69 +366,96 @@ def plan_route():
     data = request.json
     
     # Extract route data
-    route = data['route']
-    ev_model = data['evModel']
-    current_charge = data['currentCharge']
+    route = {
+        'distance': data['route']['distance'],
+        'coordinates': data['route']['coordinates']
+    }
+    ev_model = data['evModel']['name']  # Get the name instead of full object
+    current_charge = float(data['currentCharge'])
     
-    # Validate EV model
-    if ev_model not in ev_models:
-        return jsonify({'error': 'Invalid EV model'}), 400
+    # Create EV specs from the received data
+    ev_specs = {
+        'batteryCapacity': float(data['evModel']['batteryCapacity']),
+        'range': float(data['evModel']['range']),
+        'chargingSpeed': float(data['evModel']['chargingSpeed']),
+        'consumption': float(data['evModel']['consumption'])
+    }
     
-    # Calculate optimal charging stops based on the actual route
-    total_distance = route['distance']
-    ev_range = ev_models[ev_model]['range'] * (current_charge / 100)
-    
-    charging_stops = []
-    
-    if total_distance > ev_range:
-        # Calculate number of stops needed
-        remaining_distance = total_distance
-        current_position = 0
-        route_coordinates = route['coordinates']
+    try:
+        # Calculate charging stops
+        charging_stops = station_calculator.calculate_charging_stops(
+            route_data=route,
+            ev_specs=ev_specs,
+            current_charge=current_charge,
+            available_stations=fetch_stations_in_bbox(calculate_route_bbox(route['coordinates']))
+        )
         
-        while remaining_distance > ev_range:
-            # Find a charging stop approximately at the maximum range
-            stop_index = int(len(route_coordinates) * (ev_range / remaining_distance))
-            stop_point = route_coordinates[stop_index]
-            
-            # Find nearest actual charging station using existing function
-            nearby_stations = fetch_gas_stations(stop_point[0], stop_point[1], radius=5000)
-            
-            if nearby_stations:
-                nearest_station = nearby_stations[0]  # Take the first station for now
-                charging_stops.append({
-                    'name': nearest_station.get('name', f'Charging Stop {len(charging_stops) + 1}'),
-                    'lat': nearest_station['lat'],
-                    'lng': nearest_station['lng'],
-                    'chargeTime': calculate_charge_time(
-                        ev_models[ev_model],
-                        10,  # Arrival charge percentage
-                        90   # Target charge percentage
-                    ),
-                    'arrivalCharge': 10,
-                    'departureCharge': 90,
-                    'type': nearest_station.get('type', 'Fast Charger')
-                })
-            
-            remaining_distance -= ev_range
-            current_position += ev_range
-            ev_range = ev_models[ev_model]['range'] * 0.8  # Assume 80% charge for subsequent stops
-    
-    return jsonify({
-        'chargingStops': charging_stops
-    })
+        # Convert stops to JSON-serializable format
+        stops_data = [
+            {
+                'name': stop.name,
+                'lat': stop.lat,
+                'lng': stop.lng,
+                'arrivalCharge': stop.arrival_charge,
+                'departureCharge': stop.departure_charge,
+                'chargeTime': stop.charge_time,
+                'distanceFromStart': stop.distance_from_start,
+                'type': stop.type
+            }
+            for stop in charging_stops
+        ]
+        
+        return jsonify({
+            'chargingStops': stops_data
+        })
+        
+    except Exception as e:
+        print(f"Route planning error: {str(e)}")  # Add logging
+        return jsonify({'error': str(e)}), 400
 
-def calculate_charge_time(ev_model: Dict[str, Any], start_charge: int, target_charge: int) -> int:
-    """Calculate charging time in minutes"""
-    charge_difference = target_charge - start_charge
-    battery_capacity = ev_model['battery_capacity']
-    charging_speed = ev_model['charging_speed']
+def calculate_route_bbox(coordinates):
+    """Calculate the bounding box for a set of coordinates"""
+    lats = [coord[0] for coord in coordinates]
+    lngs = [coord[1] for coord in coordinates]
     
-    # Simplified charging time calculation
-    # In reality, charging speed varies based on battery level
-    energy_needed = (charge_difference / 100) * battery_capacity
-    hours_needed = energy_needed / charging_speed
-    return round(hours_needed * 60)  # Convert to minutes
+    # Add some padding to the bbox (about 5km)
+    padding = 0.045  # roughly 5km in degrees
+    
+    return {
+        'min_lat': min(lats) - padding,
+        'max_lat': max(lats) + padding,
+        'min_lng': min(lngs) - padding,
+        'max_lng': max(lngs) + padding
+    }
+
+def fetch_stations_in_bbox(bbox):
+    """Fetch charging stations within a bounding box"""
+    # Get the center point of the bbox
+    center_lat = (bbox['min_lat'] + bbox['max_lat']) / 2
+    center_lng = (bbox['min_lng'] + bbox['max_lng']) / 2
+    
+    # Use the existing get_nearby_stations function
+    response = get_nearby_stations(center_lat, center_lng)
+    stations = response.get_json()['stations']
+    
+    # Filter stations within the bbox
+    filtered_stations = []
+    for station in stations:
+        lat = station['position']['lat']
+        lng = station['position']['lng']
+        if (bbox['min_lat'] <= lat <= bbox['max_lat'] and
+            bbox['min_lng'] <= lng <= bbox['max_lng']):
+            filtered_stations.append({
+                'name': station['name'],
+                'lat': lat,
+                'lng': lng,
+                'type': station.get('type', 'Fast Charger'),
+                'power': station.get('power', '150kW'),
+                'active_chargers': station.get('active_chargers', 4),
+                'total_chargers': station.get('total_chargers', 6)
+            })
+    
+    return filtered_stations
 
 if __name__ == '__main__':
     app.run(debug=True)
