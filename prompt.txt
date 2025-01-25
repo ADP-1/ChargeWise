@@ -1,5 +1,0 @@
-We are developing a web application that provides users with a seamless experience for locating nearby EV charging stations. The app will access the user's current location and fetch real-time data (including the current date and time) from Google for the specific region. It will display a map with nearby EV stations, highlighting key information such as the average waiting time at each station. Users can interact with the map by selecting a station to view directions, which will open in a Google Maps-like interface, guiding them to the selected EV station from their current location. This will ensure convenience and efficiency for users looking for charging options within a designated range.
-I have found some github repos and have downloaded them on my device. can you read them one by one and make a simple interface which uses the models to implement our project? 
-
-___
-The models are in the folders :

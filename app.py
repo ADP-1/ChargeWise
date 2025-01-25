@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, send_from_directory
+from flask import Flask, render_template, jsonify, send_from_directory, request
 import requests
 import json
 from datetime import datetime
@@ -6,6 +6,8 @@ import numpy as np
 import time
 from models.location_optimizer import LocationOptimizer
 from models.wait_time_predictor import WaitTimePredictor
+from dataclasses import dataclass
+from typing import Dict, Any
 
 app = Flask(__name__, static_url_path='/static')
 
@@ -60,6 +62,31 @@ RESTRICTED_AREAS = [
         ]
     }
 ]
+
+# Define EV models data structure
+ev_models = {
+    'tesla_model_3': {
+        'name': "Tesla Model 3",
+        'battery_capacity': 82,  # kWh
+        'range': 358,  # km
+        'charging_speed': 250,  # kW
+        'consumption': 0.229  # kWh/km
+    },
+    'nissan_leaf': {
+        'name': "Nissan Leaf",
+        'battery_capacity': 62,
+        'range': 385,
+        'charging_speed': 100,
+        'consumption': 0.161
+    },
+    'chevy_bolt': {
+        'name': "Chevrolet Bolt",
+        'battery_capacity': 65,
+        'range': 417,
+        'charging_speed': 55,
+        'consumption': 0.156
+    }
+}
 
 def point_in_polygon(point, polygon):
     """Ray casting algorithm to determine if point is in polygon"""
@@ -229,8 +256,8 @@ def analyze_location_suitability(gas_station, existing_stations):
     return score
 
 @app.route('/')
-def index():
-    return render_template('index.html')
+def dashboard():
+    return render_template('dashboard.html')
 
 @app.route('/static/<path:path>')
 def send_static(path):
@@ -315,6 +342,91 @@ def get_optimal_locations(lat, lng):
     candidates = location_optimizer.get_candidate_locations(nodes, vsf_matrix)
     
     return jsonify({'candidates': candidates})
+
+@app.route('/nearby-stations')
+def nearby_stations():
+    return render_template('index.html')  # Your existing station search page
+
+@app.route('/route-planner')
+def route_planner():
+    return render_template('route_planner.html')
+
+@app.route('/favorites')
+def favorites():
+    return render_template('favorites.html')  # You'll need to create this
+
+@app.route('/statistics')
+def statistics():
+    return render_template('statistics.html')  # You'll need to create this
+
+@app.route('/api/route-plan', methods=['POST'])
+def plan_route():
+    data = request.json
+    
+    # Extract route data
+    route = data['route']
+    ev_model = data['evModel']
+    current_charge = data['currentCharge']
+    
+    # Validate EV model
+    if ev_model not in ev_models:
+        return jsonify({'error': 'Invalid EV model'}), 400
+    
+    # Calculate optimal charging stops based on the actual route
+    total_distance = route['distance']
+    ev_range = ev_models[ev_model]['range'] * (current_charge / 100)
+    
+    charging_stops = []
+    
+    if total_distance > ev_range:
+        # Calculate number of stops needed
+        remaining_distance = total_distance
+        current_position = 0
+        route_coordinates = route['coordinates']
+        
+        while remaining_distance > ev_range:
+            # Find a charging stop approximately at the maximum range
+            stop_index = int(len(route_coordinates) * (ev_range / remaining_distance))
+            stop_point = route_coordinates[stop_index]
+            
+            # Find nearest actual charging station using existing function
+            nearby_stations = fetch_gas_stations(stop_point[0], stop_point[1], radius=5000)
+            
+            if nearby_stations:
+                nearest_station = nearby_stations[0]  # Take the first station for now
+                charging_stops.append({
+                    'name': nearest_station.get('name', f'Charging Stop {len(charging_stops) + 1}'),
+                    'lat': nearest_station['lat'],
+                    'lng': nearest_station['lng'],
+                    'chargeTime': calculate_charge_time(
+                        ev_models[ev_model],
+                        10,  # Arrival charge percentage
+                        90   # Target charge percentage
+                    ),
+                    'arrivalCharge': 10,
+                    'departureCharge': 90,
+                    'type': nearest_station.get('type', 'Fast Charger')
+                })
+            
+            remaining_distance -= ev_range
+            current_position += ev_range
+            ev_range = ev_models[ev_model]['range'] * 0.8  # Assume 80% charge for subsequent stops
+    
+    return jsonify({
+        'chargingStops': charging_stops
+    })
+
+def calculate_charge_time(ev_model: Dict[str, Any], start_charge: int, target_charge: int) -> int:
+    """Calculate charging time in minutes"""
+    charge_difference = target_charge - start_charge
+    battery_capacity = ev_model['battery_capacity']
+    charging_speed = ev_model['charging_speed']
+    
+    # Simplified charging time calculation
+    # In reality, charging speed varies based on battery level
+    energy_needed = (charge_difference / 100) * battery_capacity
+    hours_needed = energy_needed / charging_speed
+    return round(hours_needed * 60)  # Convert to minutes
 
 if __name__ == '__main__':
     app.run(debug=True)

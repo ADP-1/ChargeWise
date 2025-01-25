@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChargeWise - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="title-bar">
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChargeWise Logo" class="logo">
+        </div>
+        <div class="profile-section">
+            <button class="about-btn">
+                <i class="fas fa-info-circle"></i>
+            </button>
+            <div class="profile-icon">
+                <i class="fas fa-user"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <h1>Welcome to ChargeWise</h1>
+        <p class="subtitle">Choose a feature to get started</p>
+
+        <div class="feature-cards">
+            <a href="/nearby-stations" class="feature-card">
+                <div class="card-icon">
+                    <i class="fas fa-search-location"></i>
+                </div>
+                <h2>Find Nearby Stations</h2>
+                <p>Search for charging stations around your location or a specific point</p>
+            </a>
+
+            <a href="/route-planner" class="feature-card">
+                <div class="card-icon">
+                    <i class="fas fa-route"></i>
+                </div>
+                <h2>Route Planner</h2>
+                <p>Plan your journey with optimal charging stops</p>
+            </a>
+
+            <a href="/favorites" class="feature-card">
+                <div class="card-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h2>Favorite Stations</h2>
+                <p>Quick access to your saved charging stations</p>
+            </a>
+
+            <a href="/statistics" class="feature-card">
+                <div class="card-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h2>Usage Statistics</h2>
+                <p>View your charging history and patterns</p>
+            </a>
+        </div>
+    </div>
+</body>
+</html> 
