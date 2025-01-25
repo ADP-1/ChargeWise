@@ -236,7 +236,7 @@ function displayStations(stations) {
                 <h3>${station.name}</h3>
                 <div class="station-details">
                     <p><i class="fas fa-charging-station"></i> ${station.active_chargers}/${station.total_chargers} Chargers Available</p>
-                    <p><i class="fas fa-clock"></i> ${station.wait_time || station.historical_avg_wait_time} mins wait time</p>
+                    <p><i class="fas fa-clock"></i> ${station.wait_time.toFixed(2)} mins wait time</p>
                     <p><i class="fas fa-bolt"></i> ${station.power || '50'} kW</p>
                     <p><i class="fas fa-map-marker-alt"></i> ${distance} km away</p>
                 </div>
@@ -257,7 +257,7 @@ function displayStations(stations) {
             <h3>${station.name}</h3>
             <div class="station-details">
                 <p><i class="fas fa-charging-station"></i> ${station.active_chargers}/${station.total_chargers} Chargers</p>
-                <p><i class="fas fa-clock"></i> ${station.wait_time || station.historical_avg_wait_time} mins wait</p>
+                <p><i class="fas fa-clock"></i> ${station.wait_time.toFixed(2)} mins wait</p>
                 <p><i class="fas fa-bolt"></i> ${station.power || '50'} kW</p>
                 <p><i class="fas fa-map-marker-alt"></i> ${distance} km away</p>
             </div>

@@ -10,12 +10,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <div class="title-bar">
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChargeWise Logo" class="logo">
+        </div>
+        <div class="profile-section">
+            <div class="profile-icon">
+                <i class="fas fa-user"></i>
+            </div>
+        </div>
+    </div>
     <div class="app-container">
         <div class="sidebar">
             <div class="sidebar-header">
-                <div class="logo-container">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ChargeWise Logo" class="logo" style="width: 80% ; height: 80%;">
-                </div>
                 <div class="search-container">
                     <button id="location-button">
                         <i class="fas fa-location-arrow"></i> Use My Location

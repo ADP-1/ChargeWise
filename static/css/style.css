@@ -140,6 +140,7 @@ button i {
 .app-container {
     display: flex;
     height: 100vh;
+    padding-top: 60px;
 }
 
 .sidebar {
@@ -350,4 +351,51 @@ button i {
 .logo {
     width: 50%;
     height: 50%;
+}
+
+.title-bar {
+    background: #fff;
+    height: 60px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 1px solid #dee2e6;
+    position: fixed;
+    top: 0;
+    z-index: 1000;
+}
+
+.title-bar .logo-container {
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+.title-bar .logo {
+    height: 70px;
+    width: auto;
+}
+
+.profile-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.profile-icon i {
+    color: #666;
+    font-size: 18px;
 }
