@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (mapContainer && !isMapInitialized) {
         initMap();
     }
+    initSidebarToggle();
 });
 
 function initMap() {
@@ -363,3 +364,31 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+function initSidebarToggle() {
+    const sidebar = document.querySelector('.sidebar');
+    const toggleBtn = document.querySelector('.toggle-sidebar');
+    const toggleIcon = toggleBtn.querySelector('i');
+    
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        
+        // Update icon and add transition
+        if (sidebar.classList.contains('collapsed')) {
+            toggleIcon.style.transform = 'rotate(180deg)';
+            toggleBtn.style.display = 'block';  // Ensure button stays visible
+            toggleBtn.style.position = 'relative';
+            toggleBtn.style.zIndex = '1000';
+        } else {
+            toggleIcon.style.transform = 'rotate(0deg)';
+            toggleBtn.style.position = 'static';
+        }
+        
+        // Trigger a resize event to update the map
+        if (map) {
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 300); // Wait for transition to complete
+        }
+    });
+}
