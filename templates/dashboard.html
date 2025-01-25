@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 </head>
 <body>
     <div class="title-bar">
@@ -29,7 +30,7 @@
                             <i class="fas fa-user-circle"></i>
                             <span>{{ username }}</span>
                         </div>
-                        <a href="{{ url_for('logout') }}" class="dropdown-item">
+                        <a href="{{ url_for('logout') }}" class="dropdown-item logout">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Logout</span>
                         </a>
@@ -40,42 +41,69 @@
     </div>
 
     <div class="dashboard-container">
-        <div class="dashboard-content">
-            <h1>Welcome to ChargeWise</h1>
-            <p class="subtitle">Choose a feature to get started</p>
+        <div class="welcome-section animate__animated animate__fadeIn">
+            <h1>Welcome back, <span class="highlight">{{ username }}</span>!</h1>
+            <p class="subtitle">Your sustainable journey starts here</p>
+        </div>
 
-            <div class="feature-cards">
-                <a href="/nearby-stations" class="feature-card">
-                    <div class="card-icon">
-                        <i class="fas fa-search-location"></i>
-                    </div>
-                    <h2>Find Nearby Stations</h2>
-                    <p>Search for charging stations around your location or a specific point</p>
-                </a>
+        <div class="quick-stats animate__animated animate__fadeInUp">
+            <div class="stat-card">
+                <i class="fas fa-charging-station"></i>
+                <div class="stat-info">
+                    <h3>Available Stations</h3>
+                    <p>150+ Stations</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-route"></i>
+                <div class="stat-info">
+                    <h3>Route Coverage</h3>
+                    <p>Delhi NCR</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-bolt"></i>
+                <div class="stat-info">
+                    <h3>Fast Charging</h3>
+                    <p>50+ Locations</p>
+                </div>
+            </div>
+        </div>
 
-                <a href="/route-planner" class="feature-card">
-                    <div class="card-icon">
-                        <i class="fas fa-route"></i>
-                    </div>
-                    <h2>Route Planner</h2>
-                    <p>Plan your journey with optimal charging stops</p>
-                </a>
+        <div class="feature-cards">
+            <a href="{{ url_for('stations') }}" class="feature-card animate__animated animate__fadeInUp">
+                <div class="card-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <h2>Find Stations</h2>
+                <p>Locate charging stations near you with real-time availability</p>
+            </a>
+            
+            <a href="{{ url_for('route_planner') }}" class="feature-card animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
+                <div class="card-icon">
+                    <i class="fas fa-route"></i>
+                </div>
+                <h2>Plan Route</h2>
+                <p>Plan your journey with optimal charging stops</p>
+            </a>
+            
+            <a href="#" class="feature-card animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
+                <div class="card-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h2>Analytics</h2>
+                <p>View charging statistics and usage patterns</p>
+            </a>
+        </div>
 
-                <a href="/favorites" class="feature-card">
-                    <div class="card-icon">
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h2>Favorite Stations</h2>
-                    <p>Quick access to your saved charging stations</p>
-                </a>
-
-                <a href="/statistics" class="feature-card">
-                    <div class="card-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <h2>Usage Statistics</h2>
-                    <p>View your charging history and patterns</p>
-                </a>
+        <div class="tips-section animate__animated animate__fadeInUp" style="animation-delay: 0.3s;">
+            <h2>Quick Tips</h2>
+            <div class="tips-carousel">
+                <div class="tip-card">
+                    <i class="fas fa-lightbulb"></i>
+                    <h3>Did You Know?</h3>
+                    <p>Fast charging is most efficient between 20% and 80% battery level.</p>
+                </div>
             </div>
         </div>
     </div>

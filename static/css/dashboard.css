@@ -15,53 +15,121 @@
 
 .dashboard-container {
     max-width: 1200px;
-    margin: 0 auto;
-    padding: 80px 20px 20px; /* Added top padding to account for fixed title-bar */
+    margin: 80px auto 40px;
+    padding: 0 20px;
+}
+
+.welcome-section {
     text-align: center;
+    margin-bottom: 40px;
 }
 
-.dashboard-content {
-    margin-top: 20px; /* Additional spacing after the title-bar */
-}
-
-.dashboard-container h1 {
-    font-size: 2.5em;
+.welcome-section h1 {
+    font-size: 2.8em;
     color: #333;
     margin-bottom: 10px;
 }
 
+.highlight {
+    color: #4CAF50;
+    font-weight: 600;
+}
+
 .subtitle {
     color: #666;
-    font-size: 1.2em;
+    font-size: 1.3em;
     margin-bottom: 40px;
 }
 
-.feature-cards {
+.quick-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 30px;
-    padding: 20px;
+    gap: 20px;
+    margin-bottom: 40px;
 }
 
-.feature-card {
+.stat-card {
     background: white;
+    padding: 20px;
     border-radius: 12px;
-    padding: 30px;
-    text-decoration: none;
-    color: inherit;
-    transition: transform 0.3s, box-shadow 0.3s;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.feature-card:hover {
+.stat-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 6px 12px rgba(0,0,0,0.15);
 }
 
+.stat-card i {
+    font-size: 2em;
+    color: #4CAF50;
+    background: #e8f5e9;
+    padding: 15px;
+    border-radius: 50%;
+}
+
+.stat-info h3 {
+    margin: 0;
+    font-size: 1.1em;
+    color: #333;
+}
+
+.stat-info p {
+    margin: 5px 0 0;
+    color: #666;
+    font-size: 1.2em;
+    font-weight: 500;
+}
+
+.feature-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.feature-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, transparent, rgba(76, 175, 80, 0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+}
+
+.feature-card:hover::before {
+    transform: translateX(100%);
+}
+
 .card-icon {
     font-size: 2.5em;
-    margin-bottom: 20px;
     color: #4CAF50;
+    margin-bottom: 20px;
 }
 
 .feature-card h2 {
@@ -75,14 +143,68 @@
     line-height: 1.5;
 }
 
+.tips-section {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 40px;
+}
+
+.tips-section h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.tips-carousel {
+    display: flex;
+    justify-content: center;
+}
+
+.tip-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 400px;
+}
+
+.tip-card i {
+    font-size: 2em;
+    color: #ffd700;
+    margin-bottom: 15px;
+}
+
+.tip-card h3 {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.tip-card p {
+    color: #666;
+    line-height: 1.5;
+}
+
 @media (max-width: 768px) {
-    .feature-cards {
+    .dashboard-container {
+        margin-top: 60px;
+    }
+    
+    .welcome-section h1 {
+        font-size: 2em;
+    }
+    
+    .subtitle {
+        font-size: 1.1em;
+    }
+    
+    .quick-stats {
         grid-template-columns: 1fr;
     }
     
-    .dashboard-container {
-        margin: 20px auto;
-        padding-top: 100px; /* Increased padding for mobile */
+    .feature-cards {
+        grid-template-columns: 1fr;
     }
 }
 
