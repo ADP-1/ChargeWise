@@ -417,3 +417,18 @@ function initSidebarToggle() {
         }
     });
 }
+
+function toggleProfileDropdown() {
+    const dropdown = document.getElementById('profileDropdown');
+    dropdown.classList.toggle('active');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const profileMenu = document.querySelector('.profile-menu');
+    const dropdown = document.getElementById('profileDropdown');
+    
+    if (profileMenu && dropdown && !profileMenu.contains(event.target)) {
+        dropdown.classList.remove('active');
+    }
+});

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, send_from_directory, request
+from flask import Flask, render_template, jsonify, send_from_directory, request, redirect, url_for, session
 import requests
 import json
 from datetime import datetime
@@ -257,9 +257,33 @@ def analyze_location_suitability(gas_station, existing_stations):
     
     return score
 
+app.secret_key = 'your-secret-key-here'  # Replace with a secure secret key in production
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        if username == "KrishDev" and password == "Dev001":
+            session['logged_in'] = True
+            session['username'] = username
+            return redirect(url_for('dashboard'))
+        else:
+            return render_template('login.html', error="Invalid credentials")
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
 @app.route('/')
 def dashboard():
-    return render_template('dashboard.html')
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('dashboard.html', username=session.get('username'))
 
 @app.route('/static/<path:path>')
 def send_static(path):
@@ -351,7 +375,15 @@ def nearby_stations():
 
 @app.route('/route-planner')
 def route_planner():
-    return render_template('route_planner.html')
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('route_planner.html', username=session.get('username'))
+
+@app.route('/stations')
+def stations():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('index.html', username=session.get('username'))
 
 @app.route('/favorites')
 def favorites():
