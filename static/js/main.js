@@ -18,6 +18,25 @@ document.addEventListener('DOMContentLoaded', function() {
         initMap();
     }
     initSidebarToggle();
+
+    // Add modal functionality
+    const aboutBtn = document.querySelector('.about-btn');
+    const modal = document.getElementById('aboutModal');
+    const closeBtn = document.querySelector('.close-modal');
+
+    aboutBtn.addEventListener('click', () => {
+        modal.style.display = 'block';
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
 });
 
 function initMap() {
@@ -369,6 +388,7 @@ function initSidebarToggle() {
     const sidebar = document.querySelector('.sidebar');
     const toggleBtn = document.querySelector('.toggle-sidebar');
     const toggleIcon = toggleBtn.querySelector('i');
+    const fallback = document.querySelector('.station-list-fallback');
     
     toggleBtn.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
@@ -376,19 +396,24 @@ function initSidebarToggle() {
         // Update icon and add transition
         if (sidebar.classList.contains('collapsed')) {
             toggleIcon.style.transform = 'rotate(180deg)';
-            toggleBtn.style.display = 'block';  // Ensure button stays visible
+            toggleBtn.style.display = 'block';
             toggleBtn.style.position = 'relative';
             toggleBtn.style.zIndex = '1000';
+            if (fallback) fallback.style.display = 'none';  // Hide fallback when collapsed
         } else {
             toggleIcon.style.transform = 'rotate(0deg)';
             toggleBtn.style.position = 'static';
+            // Only show fallback if no stations are listed
+            if (fallback && document.querySelectorAll('.station-card').length === 0) {
+                fallback.style.display = 'flex';
+            }
         }
         
         // Trigger a resize event to update the map
         if (map) {
             setTimeout(() => {
                 map.invalidateSize();
-            }, 300); // Wait for transition to complete
+            }, 300);
         }
     });
 }
