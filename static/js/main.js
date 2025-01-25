@@ -4,6 +4,8 @@ let stationMarkers = [];
 let routingControl = null;
 let accuracyCircle = null;
 let isMapInitialized = false;
+let searchRadius = 5; // Default radius in km
+let radiusCircle = null;
 
 // Replace with your Google Maps API key
 const GOOGLE_MAPS_API_KEY = 'YOUR_API_KEY';
@@ -35,6 +37,26 @@ function initMap() {
     if (locationButton) {
         locationButton.addEventListener('click', getCurrentLocation);
     }
+
+    // Add radius slider functionality
+    const radiusSlider = document.getElementById('radius-slider');
+    const radiusValue = document.getElementById('radius-value');
+    
+    radiusSlider.addEventListener('input', function(e) {
+        searchRadius = parseInt(e.target.value);
+        radiusValue.textContent = searchRadius;
+        
+        // Update radius circle if user location exists
+        if (userMarker) {
+            updateRadiusCircle(userMarker.getLatLng());
+        }
+        
+        // Refetch stations with new radius if we have a location
+        if (userMarker) {
+            const pos = userMarker.getLatLng();
+            fetchNearbyStations(pos.lat, pos.lng);
+        }
+    });
 
     isMapInitialized = true;
 }
@@ -108,23 +130,67 @@ function handleLocationSelect(lat, lng) {
     }).addTo(map);
     userMarker.bindPopup("Your Location").openPopup();
 
+    // Update radius circle
+    updateRadiusCircle([lat, lng]);
+
+    // Update API call to include radius
     fetchNearbyStations(lat, lng);
 }
 
 function fetchNearbyStations(lat, lng) {
-    fetch(`/api/stations/${lat}/${lng}`)
+    // Show loading state
+    const stationList = document.getElementById('station-list');
+    stationList.innerHTML = '<div class="loading">Finding charging stations...</div>';
+
+    fetch(`/api/stations/${lat}/${lng}?radius=${searchRadius}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
                 alert(data.error);
                 return;
             }
-            displayStations(data.stations);
+            // Filter stations within radius
+            const stations = filterStationsWithinRadius(data.stations, {lat, lng});
+            if (stations.length === 0) {
+                stationList.innerHTML = '<div class="no-stations">No charging stations found within ' + searchRadius + 'km radius</div>';
+            } else {
+                displayStations(stations);
+            }
         })
         .catch(error => {
             console.error('Error fetching stations:', error);
             alert('Error fetching nearby stations. Please try again.');
         });
+}
+
+function filterStationsWithinRadius(stations, center) {
+    return stations.filter(station => {
+        const stationPos = station.position || { lat: station.lat, lng: station.lng };
+        const distance = calculateDistance(
+            center.lat,
+            center.lng,
+            stationPos.lat,
+            stationPos.lng
+        );
+        return distance <= searchRadius;
+    });
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const d = R * c; // Distance in km
+    return d;
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI/180);
 }
 
 function displayStations(stations) {
@@ -139,21 +205,32 @@ function displayStations(stations) {
     // Create bounds to fit all markers
     const bounds = L.latLngBounds();
 
-    stations.forEach(station => {
-        // Get station position
+    // Sort stations by distance
+    const userPos = userMarker.getLatLng();
+    stations.sort((a, b) => {
+        const aPos = a.position || { lat: a.lat, lng: a.lng };
+        const bPos = b.position || { lat: b.lat, lng: b.lng };
+        const distA = calculateDistance(userPos.lat, userPos.lng, aPos.lat, aPos.lng);
+        const distB = calculateDistance(userPos.lat, userPos.lng, bPos.lat, bPos.lng);
+        return distA - distB;
+    });
+
+    stations.forEach((station, index) => {
         const position = station.position || { lat: station.lat, lng: station.lng };
-        
+        const distance = calculateDistance(
+            userPos.lat,
+            userPos.lng,
+            position.lat,
+            position.lng
+        ).toFixed(1);
+
         // Add marker to map
+        const isAvailable = station.active_chargers > 0;
         const marker = L.marker([position.lat, position.lng], {
-            icon: L.icon({
-                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${getMarkerColor(station.type)}.png`,
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34]
-            })
+            icon: getCustomIcon(station.type, isAvailable)
         }).addTo(map);
 
-        // Create popup content
+        // Create popup content with distance
         const popupContent = `
             <div class="station-popup">
                 <h3>${station.name}</h3>
@@ -161,7 +238,7 @@ function displayStations(stations) {
                     <p><i class="fas fa-charging-station"></i> ${station.active_chargers}/${station.total_chargers} Chargers Available</p>
                     <p><i class="fas fa-clock"></i> ${station.wait_time || station.historical_avg_wait_time} mins wait time</p>
                     <p><i class="fas fa-bolt"></i> ${station.power || '50'} kW</p>
-                    <p><i class="fas fa-car"></i> Queue: ${station.current_queue_length || '0'} vehicles</p>
+                    <p><i class="fas fa-map-marker-alt"></i> ${distance} km away</p>
                 </div>
                 <button onclick="getDirections(${position.lat}, ${position.lng})" class="direction-btn">
                     <i class="fas fa-directions"></i> Get Directions
@@ -171,11 +248,9 @@ function displayStations(stations) {
         
         marker.bindPopup(popupContent);
         stationMarkers.push(marker);
-
-        // Add station location to bounds
         bounds.extend([position.lat, position.lng]);
 
-        // Create station card in list
+        // Create station card with distance
         const stationCard = document.createElement('div');
         stationCard.className = 'station-card';
         stationCard.innerHTML = `
@@ -184,14 +259,13 @@ function displayStations(stations) {
                 <p><i class="fas fa-charging-station"></i> ${station.active_chargers}/${station.total_chargers} Chargers</p>
                 <p><i class="fas fa-clock"></i> ${station.wait_time || station.historical_avg_wait_time} mins wait</p>
                 <p><i class="fas fa-bolt"></i> ${station.power || '50'} kW</p>
-                <p><i class="fas fa-car"></i> Queue: ${station.current_queue_length || '0'} vehicles</p>
+                <p><i class="fas fa-map-marker-alt"></i> ${distance} km away</p>
             </div>
             <button onclick="getDirections(${position.lat}, ${position.lng})" class="direction-btn">
                 <i class="fas fa-directions"></i> Get Directions
             </button>
         `;
 
-        // Add click handler to center map on station
         stationCard.addEventListener('click', () => {
             map.setView([position.lat, position.lng], 15);
             marker.openPopup();
@@ -200,13 +274,11 @@ function displayStations(stations) {
         stationList.appendChild(stationCard);
     });
 
-    // If we have stations, fit the map to show all of them
+    // Fit map to show all markers and radius circle
     if (stationMarkers.length > 0) {
-        // Add user location to bounds if it exists
         if (userMarker) {
             bounds.extend(userMarker.getLatLng());
         }
-        // Fit the map to show all markers with some padding
         map.fitBounds(bounds, {
             padding: [50, 50],
             maxZoom: 15
@@ -214,16 +286,31 @@ function displayStations(stations) {
     }
 }
 
-function getMarkerColor(stationType) {
-    switch(stationType.toLowerCase()) {
-        case 'market': return 'green';
-        case 'office': return 'blue';
-        case 'hospital': return 'red';
-        case 'school': return 'orange';
-        case 'mall': return 'violet';
-        case 'parking': return 'yellow';
-        default: return 'blue';
-    }
+function getCustomIcon(type, isAvailable) {
+    const colors = {
+        market: '#4CAF50',    // Green
+        office: '#2196F3',    // Blue
+        hospital: '#F44336',  // Red
+        school: '#FF9800',    // Orange
+        mall: '#9C27B0',      // Purple
+        parking: '#FDD835',   // Yellow
+        default: '#2196F3'    // Default Blue
+    };
+
+    const color = colors[type.toLowerCase()] || colors.default;
+    const opacity = isAvailable ? '1' : '0.5';
+
+    return L.divIcon({
+        className: 'custom-marker',
+        html: `
+            <div class="marker-pin" style="background-color: ${color}; opacity: ${opacity};">
+                <i class="fas fa-charging-station"></i>
+            </div>
+        `,
+        iconSize: [30, 42],
+        iconAnchor: [15, 42],
+        popupAnchor: [0, -42]
+    });
 }
 
 function getDirections(destLat, destLng) {
@@ -235,6 +322,22 @@ function getDirections(destLat, destLng) {
     const userPos = userMarker.getLatLng();
     const url = `https://www.google.com/maps/dir/?api=1&origin=${userPos.lat},${userPos.lng}&destination=${destLat},${destLng}&travelmode=driving`;
     window.open(url, '_blank');
+}
+
+function updateRadiusCircle(latLng) {
+    // Remove existing circle if it exists
+    if (radiusCircle) {
+        map.removeLayer(radiusCircle);
+    }
+    
+    // Create new circle
+    radiusCircle = L.circle(latLng, {
+        radius: searchRadius * 1000, // Convert km to meters
+        color: '#4CAF50',
+        fillColor: '#4CAF50',
+        fillOpacity: 0.1,
+        weight: 1
+    }).addTo(map);
 }
 
 // Add some CSS for the location button
