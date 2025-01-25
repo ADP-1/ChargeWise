@@ -76,20 +76,20 @@ function getCurrentLocation() {
     );
 }
 
-// EV Models database (simplified)
+// EV Models database (simplified) - Remove 'kW' from charging speed values
 const evModels = {
     tesla_model_3: {
         name: "Tesla Model 3",
         batteryCapacity: 82, // kWh
         range: 358, // km
-        chargingSpeed: 250, // kW
+        chargingSpeed: 250, // kW (removed 'kW' suffix)
         consumption: 0.229 // kWh/km
     },
     nissan_leaf: {
         name: "Nissan Leaf",
         batteryCapacity: 62,
         range: 385,
-        chargingSpeed: 100,
+        chargingSpeed: 100, // kW (removed 'kW' suffix)
         consumption: 0.161
     },
     // Add more EV models
@@ -228,58 +228,98 @@ function displayStopsList(stops) {
     stopsList.innerHTML = stopsHTML;
 }
 
-// Update the backend API call in the form submission handler
+// Add this function to clear previous route data
+function clearPreviousRoute() {
+    // Clear map layers
+    if (routeLayer) routeLayer.clearLayers();
+    if (markersLayer) markersLayer.clearLayers();
+    
+    // Clear route summary if it exists
+    const existingSummary = document.querySelector('.route-summary');
+    if (existingSummary) {
+        existingSummary.remove();
+    }
+    
+    // Clear charging stops list
+    const stopsList = document.getElementById('stops-list');
+    if (stopsList) {
+        stopsList.innerHTML = '';
+    }
+}
+
+// Update the form submission handler
 document.getElementById('route-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    clearPreviousRoute();
     
     const startLocation = document.getElementById('start-location').value;
     const endLocation = document.getElementById('end-location').value;
     const evModel = document.getElementById('ev-model').value;
     const currentCharge = document.getElementById('current-charge').value;
     
-    // Validate inputs
-    if (!startLocation || !endLocation) {
-        alert('Please select both start and destination locations');
+    if (!startLocation || !endLocation || !evModel || !currentCharge) {
+        alert('Please fill in all fields');
         return;
     }
     
+    // Show loading state
+    const routeResults = document.querySelector('.route-results');
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'loading-indicator';
+    loadingDiv.innerHTML = `
+        <div class="spinner"></div>
+        <p>Calculating optimal route...</p>
+    `;
+    routeResults.prepend(loadingDiv);
+    
     try {
-        // First calculate the actual route
+        // Parse coordinates
         const [startLat, startLng] = startLocation.split(',').map(coord => parseFloat(coord.trim()));
         const [endLat, endLng] = endLocation.split(',').map(coord => parseFloat(coord.trim()));
         
+        if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) {
+            throw new Error('Invalid coordinates format');
+        }
+        
+        // Calculate route first
         const routeData = await calculateRoute([startLat, startLng], [endLat, endLng]);
         
-        // Then get charging stops from our backend
+        // Clean up EV model data before sending
+        const selectedEvModel = evModels[evModel];
+        if (!selectedEvModel) {
+            throw new Error('Invalid EV model selected');
+        }
+
         const response = await fetch('/api/route-plan', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                start: startLocation,
-                end: endLocation,
                 route: routeData,
-                evModel: evModel,
+                evModel: selectedEvModel,
                 currentCharge: parseInt(currentCharge)
             })
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
         const data = await response.json();
         
-        if (data.error) {
-            throw new Error(data.error);
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to plan route');
         }
         
-        // Use the calculated route instead of straight line
-        displayRoute(routeData, data.chargingStops);
+        loadingDiv.remove();
+        
+        if (data.chargingStops) {
+            displayRoute(routeData, data.chargingStops);
+        } else {
+            throw new Error('No charging stops returned');
+        }
     } catch (error) {
+        loadingDiv.remove();
         console.error('Error planning route:', error);
-        alert('Error planning route. Please try again.');
+        alert(error.message || 'Error planning route. Please try again.');
     }
 });
 
