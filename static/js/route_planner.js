@@ -97,7 +97,7 @@ const evModels = {
 
 // Add this function to calculate the actual route
 async function calculateRoute(startCoords, endCoords) {
-    const startStr = `${startCoords[1]},${startCoords[0]}`; // OSRM expects lng,lat format
+    const startStr = `${startCoords[1]},${startCoords[0]}`;
     const endStr = `${endCoords[1]},${endCoords[0]}`;
     
     try {
@@ -115,15 +115,45 @@ async function calculateRoute(startCoords, endCoords) {
             throw new Error('No route found');
         }
         
+        // Calculate segments for battery monitoring
+        const coordinates = data.routes[0].geometry.coordinates;
+        const segments = [];
+        let totalDistance = 0;
+        
+        for (let i = 0; i < coordinates.length - 1; i++) {
+            const distance = calculateSegmentDistance(
+                coordinates[i][1], coordinates[i][0],
+                coordinates[i + 1][1], coordinates[i + 1][0]
+            );
+            totalDistance += distance;
+            segments.push({
+                start: [coordinates[i][1], coordinates[i][0]],
+                end: [coordinates[i + 1][1], coordinates[i + 1][0]],
+                distance: distance
+            });
+        }
+        
         return {
-            coordinates: data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]), // Convert to lat,lng format
-            distance: data.routes[0].distance / 1000, // Convert to km
-            duration: Math.round(data.routes[0].duration / 60) // Convert to minutes
+            coordinates: coordinates.map(coord => [coord[1], coord[0]]),
+            distance: totalDistance,
+            duration: Math.round(data.routes[0].duration / 60),
+            segments: segments
         };
     } catch (error) {
         console.error('Error calculating route:', error);
         throw error;
     }
+}
+
+function calculateSegmentDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
 }
 
 // Update the displayRoute function to handle the new route format

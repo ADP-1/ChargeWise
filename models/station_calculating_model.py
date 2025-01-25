@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from dataclasses import dataclass
 from math import ceil
 
@@ -47,102 +47,85 @@ class ChargingStationCalculator:
         route_data: Dict[str, Any],
         ev_specs: Dict[str, Any],
         current_charge: float,
-        available_stations: List[Dict[str, Any]],
-        weather_data: Dict[str, Any] = None
+        available_stations: List[Dict[str, Any]]
     ) -> List[ChargingStop]:
-        """
-        Calculate optimal charging stops for the route
-        """
+        """Calculate optimal charging stops for the route"""
         self.battery_capacity = ev_specs['batteryCapacity']
         total_distance = route_data['distance']
         route_coordinates = route_data['coordinates']
+        consumption_rate = ev_specs['consumption']
         
         # Initialize variables
-        remaining_distance = total_distance
         current_position = 0
         current_battery = current_charge
-        stops: List[ChargingStop] = []
+        stops = []
         
-        # Get base range from EV specs
-        base_range = ev_specs['range']
-        consumption_rate = ev_specs['consumption']  # kWh/km
+        # Calculate energy needed per kilometer
+        energy_per_km = consumption_rate
         
-        while remaining_distance > 0:
-            # Calculate adjusted range based on conditions
-            adjusted_range = self._calculate_adjusted_range(
-                base_range,
-                current_battery,
-                weather_data
+        # Process each segment
+        accumulated_distance = 0
+        
+        for i, coord in enumerate(route_coordinates[:-1]):
+            segment_distance = self._haversine_distance(
+                coord[0], coord[1],
+                route_coordinates[i+1][0], route_coordinates[i+1][1]
             )
             
-            # Calculate distance to next stop
-            distance_to_next = self._calculate_distance_to_next_stop(
-                adjusted_range,
-                remaining_distance,
-                current_battery
-            )
+            accumulated_distance += segment_distance
+            energy_needed = segment_distance * energy_per_km
+            battery_drain = (energy_needed / self.battery_capacity) * 100
+            current_battery -= battery_drain
             
-            # If we can reach destination with current charge
-            if distance_to_next >= remaining_distance:
-                final_charge = self._calculate_arrival_charge(
-                    current_battery,
-                    remaining_distance,
-                    consumption_rate
+            # Check if battery is getting too low (below 20%)
+            if current_battery < 20 and accumulated_distance < total_distance:
+                # Find nearest charging station
+                nearest_station = self._find_nearest_station(
+                    available_stations,
+                    coord[0], coord[1]
                 )
-                if final_charge >= self.SAFETY_BUFFER:
-                    break
-            
-            # Find optimal charging station
-            next_stop = self._find_optimal_station(
-                available_stations,
-                current_position,
-                distance_to_next,
-                route_coordinates
-            )
-            
-            if not next_stop:
-                raise ValueError("No suitable charging station found")
-            
-            # Calculate arrival and departure charge
-            distance_to_stop = next_stop['distance_from_current']
-            arrival_charge = self._calculate_arrival_charge(
-                current_battery,
-                distance_to_stop,
-                consumption_rate
-            )
-            
-            # Calculate optimal departure charge
-            departure_charge = self._calculate_optimal_departure_charge(
-                remaining_distance - distance_to_stop,
-                consumption_rate,
-                base_range
-            )
-            
-            # Calculate charging time
-            charge_time = self._calculate_charging_time(
-                arrival_charge,
-                departure_charge,
-                ev_specs
-            )
-            
-            # Add stop to list
-            stops.append(ChargingStop(
-                name=next_stop['name'],
-                lat=next_stop['lat'],
-                lng=next_stop['lng'],
-                arrival_charge=round(arrival_charge, 1),
-                departure_charge=round(departure_charge, 1),
-                charge_time=charge_time,
-                distance_from_start=round(current_position + distance_to_stop, 1),
-                type=next_stop['type']
-            ))
-            
-            # Update position and remaining distance
-            current_position += distance_to_stop
-            remaining_distance -= distance_to_stop
-            current_battery = departure_charge
+                
+                if not nearest_station:
+                    raise ValueError("No suitable charging station found")
+                
+                # Calculate optimal charge level
+                remaining_distance = total_distance - accumulated_distance
+                needed_charge = (remaining_distance * energy_per_km / self.battery_capacity * 100) + 30
+                optimal_charge = min(90, max(needed_charge, 80))
+                
+                # Calculate charging time
+                charging_time = self._calculate_charging_time(
+                    current_battery,
+                    optimal_charge,
+                    ev_specs
+                )
+                
+                stops.append(ChargingStop(
+                    name=nearest_station['name'],
+                    lat=nearest_station['lat'],
+                    lng=nearest_station['lng'],
+                    arrival_charge=round(current_battery, 1),
+                    departure_charge=round(optimal_charge, 1),
+                    charge_time=charging_time,
+                    distance_from_start=round(accumulated_distance, 1),
+                    type=nearest_station.get('type', 'Unknown')
+                ))
+                
+                current_battery = optimal_charge
         
         return stops
+
+    def _find_nearest_station(self, stations: List[Dict[str, Any]], lat: float, lng: float) -> Optional[Dict[str, Any]]:
+        """Find the nearest charging station to a given point"""
+        if not stations:
+            return None
+        
+        nearest = min(
+            stations,
+            key=lambda s: self._haversine_distance(lat, lng, s['lat'], s['lng'])
+        )
+        
+        return nearest
 
     def _calculate_adjusted_range(
         self,
