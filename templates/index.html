@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChargeWise - EV Charging Station Locator</title>
-    <!-- Remove Flask template syntax and use direct path -->
-    <link rel="stylesheet" href="/static/css/style.css">
-    <!-- Leaflet CSS -->
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <!-- Leaflet Locate Control CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
@@ -20,21 +18,22 @@
         
         <div class="search-container">
             <input type="text" id="location-search" placeholder="Enter location or use current location">
-            <button id="location-button">Use My Location</button>
+            <button id="location-button">
+                <i class="fas fa-location-arrow"></i> Use My Location
+            </button>
         </div>
 
-        <div id="map"></div>
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
 
-        <div class="station-info" id="station-info">
-            <h2>Station Details</h2>
-            <div id="station-details"></div>
+        <div class="station-list" id="station-list">
+            <!-- Stations will be listed here -->
         </div>
     </div>
-    <!-- Leaflet JS -->
+
+    <!-- JavaScript -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <!-- Leaflet Locate Control JS -->
-    <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
-    <!-- Custom JS -->
-    <script src="/static/js/main.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
