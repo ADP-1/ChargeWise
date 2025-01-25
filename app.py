@@ -389,9 +389,11 @@ def stations():
 def favorites():
     return render_template('favorites.html')  # You'll need to create this
 
-@app.route('/statistics')
-def statistics():
-    return render_template('statistics.html')  # You'll need to create this
+@app.route('/analytics')
+def analytics():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('analytics_soon.html', username=session.get('username'))
 
 @app.route('/api/route-plan', methods=['POST'])
 def plan_route():
