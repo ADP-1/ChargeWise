@@ -395,6 +395,12 @@ def analytics():
         return redirect(url_for('login'))
     return render_template('analytics_soon.html', username=session.get('username'))
 
+@app.route('/cng-switch')
+def cng_switch():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('cng_switch_soon.html', username=session.get('username'))
+
 @app.route('/api/route-plan', methods=['POST'])
 def plan_route():
     data = request.json
