@@ -3,7 +3,8 @@
     grid-template-columns: 350px 1fr;
     gap: 20px;
     padding: 20px;
-    height: calc(100vh - 60px);
+    height: calc(100vh - 120px);
+    margin-top: 60px;
 }
 
 .route-form {
@@ -11,6 +12,8 @@
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
 }
 
 .input-group {
@@ -158,4 +161,49 @@
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Add these new styles for the nav links */
+.nav-links {
+    display: flex;
+    gap: 15px;
+}
+
+.nav-link {
+    position: relative;
+    padding: 8px 16px;
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid transparent;
+}
+
+.nav-link:hover {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
+}
+
+.nav-link.active {
+    background: transparent;
+    color: #2c3e50;
+    border: none;
+    box-shadow: none;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    padding: 8px 0;
+    text-transform: none;
+    letter-spacing: 0.5px;
+}
+
+.nav-link.active:hover {
+    background: transparent;
+    transform: none;
+    box-shadow: none;
+    color: #2c3e50;
 }
