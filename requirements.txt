@@ -8,4 +8,4 @@ geopy==2.4.1
 folium==0.15.0
 overpass==0.7
 haversine==2.8.0
-Flask-Cors==4.0.0 
+Flask-Cors==4.0.0

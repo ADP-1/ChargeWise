@@ -114,7 +114,6 @@ models/*.joblib
 *.csv
 *.xlsx
 *.xls
-*.json
 *.xml
 
 # Temporary files

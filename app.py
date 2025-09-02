@@ -497,5 +497,7 @@ def fetch_stations_in_bbox(bbox):
     
     return filtered_stations
 
+app = app
+
 if __name__ == '__main__':
     app.run(debug=True)

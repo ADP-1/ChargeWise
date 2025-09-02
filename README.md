@@ -46,8 +46,8 @@ ChargeWise is a modern, user-friendly dashboard for finding and managing EV char
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/chargewise.git
-cd chargewise
+git clone https://github.com/ADP-1/ChargeWise
+cd ChargeWise
 ```
 
 2. Create and activate virtual environment:
